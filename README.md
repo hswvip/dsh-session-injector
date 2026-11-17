@@ -46,6 +46,30 @@ plugin_manager install_bundle /path/to/dsh-session-injector
 
 Requirements: DSH with the `typertGateway` + `connection` Host context (declare `inject: ['typertGateway', 'connection']` — already done in this plugin's `index.js`).
 
+### Seamless two-way task processing with WorkBuddy / Hermes / any external agent
+
+The same machine often runs several agent platforms (e.g. DeepSeek Harness, WorkBuddy, Hermes). Because the injector binds to `127.0.0.1`, **any local agent can call it directly** — no shared task queue, no central broker, no manual message ferrying:
+
+```
+DSH agent ──(feishu/API)──▶ External agent (WorkBuddy/Hermes)
+External agent ──(curl 127.0.0.1:8799/inject)──▶ DSH session dialog   ← 全自动双向
+```
+
+**Full-duplex example** (DSH requests an image; external agent delivers and notifies back — fully automatic):
+
+```bash
+# External agent's delivery call (one line, runs anywhere on the same host):
+curl -s -X POST http://127.0.0.1:8799/inject \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"<dsh-requester-session>","text":"【delivered】8/8 images at /path/to/output"}'
+```
+
+Key properties:
+
+- **Bidirectional**: external agents can *start* conversations in DSH dialogs, not just reply — full automatic task processing both ways.
+- **Platform-agnostic**: works with anything that can run `curl` on the same host — WorkBuddy, Hermes, LangChain runners, plain cron scripts.
+- **Human-visible**: every injection is a real message in the dialog, visible and replayable.
+
 ### Multi-agent relay pattern (what this was built for)
 
 A coordinator injects task notices into each agent workspace's dialog; agents process in their own dialogs and inject completion notices back. No central task queue needed — the dialog IS the task board.
@@ -84,6 +108,30 @@ MIT
 ### 解决什么问题
 
 多智能体编排（任务队列、IM 桥、定时任务、其他 agent）经常需要把一条消息**送进正在运行的 DSH 会话**，让它出现在会话对话框里并由该会话的 agent 处理。DSH 原生只支持 IM 渠道插件（飞书/微信/Telegram…）或 GUI 手动输入。本插件打开了与 GUI 同源的官方 `session.prompt` 队列通道——本机任何进程都能唤醒任意会话。
+
+### 与 WorkBuddy / Hermes / 任意外部 agent 的全自动双向任务处理
+
+同一台机器上往往跑着多个 agent 平台（DeepSeek Harness、WorkBuddy、Hermes…）。注入器只绑定 `127.0.0.1`，**本机所有 agent 都能直接调用**——无需共享任务队列、无需中央消息总线、无需人工搬运消息：
+
+```
+DSH agent ──(飞书/API)──▶ 外部 agent（WorkBuddy/Hermes）
+外部 agent ──(curl 127.0.0.1:8799/inject)──▶ DSH 会话对话框   ← 全自动双向
+```
+
+**全自动双向示例**（DSH 委托出图；外部 agent 完成后主动唤醒 DSH 对话框交付——全自动闭环）：
+
+```bash
+# 外部 agent 的交付调用（一行，本机任意位置可执行）：
+curl -s -X POST http://127.0.0.1:8799/inject \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"<DSH请求方会话>","text":"【交付】8/8 参考图已生成，路径 /path/to/output"}'
+```
+
+关键特性：
+
+- **双向**：外部 agent 不只能"回复"，还能主动**发起** DSH 对话框中的对话——两边都是全自动任务处理。
+- **平台无关**：只要能在同一台主机上执行 `curl` 就能接入——WorkBuddy、Hermes、LangChain runner、纯 cron 脚本，都行。
+- **人类可见**：每次注入都是对话框里的一条真实消息，可见、可回溯。
 
 ### 多智能体中继模式（本插件的原始用途）
 
