@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "会话注入器",
+    "description": "本地 HTTP 端点：把外部消息注入任意 DSH 会话的对话框（session.prompt queue 模式，带写锁安全）"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session Injector",
+    "description": "Local HTTP endpoint: inject task text into any DSH session dialog (session.prompt queue mode)"
+  }
+}
